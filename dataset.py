@@ -10,7 +10,10 @@ def load_caltech3d_dataset():
         files = os.listdir(path)
         start = 'img_1-%03d_' % (lighting*360 + angle)
         end = '_0_small.JPG'
-        fname = [f for f in files if f.startswith(start) and f.endswith(end)][0]
+        fname = [f for f in files if f.startswith(start) and f.endswith(end)]
+        if not fname:
+            print path
+        fname = fname[0]
         im = misc.imread(os.path.join(path, fname)) / 255.0
         return im
     
@@ -29,6 +32,21 @@ def load_caltech3d_dataset():
                             gt = (obj, view, lighting, angle + delta/2)
                             train_data.append((i1, i2, gt))
 
+    with open('caltech3d/val.txt') as f:
+        val_dirs = [d.strip() for d in f.readlines()]
+    val_data = []
+    logging.info('Generating validation tuples...')
+    for obj in val_dirs:
+        for view in ['top', 'bottom']:
+            for lighting in range(3):
+                for angle in range(5, 355, 5):
+                    for delta in [20, 30, 40, 50, 60]:
+                        if angle + delta <= 355:
+                            i1 = (obj, view, lighting, angle)
+                            i2 = (obj, view, lighting, angle + delta)
+                            gt = (obj, view, lighting, angle + delta/2)
+                            val_data.append((i1, i2, gt))
+
     with open('caltech3d/test.txt') as f:
         test_dirs = [d.strip() for d in f.readlines()]
     test_data = []
@@ -44,8 +62,8 @@ def load_caltech3d_dataset():
                             gt = (obj, view, lighting, angle + delta/2)
                             test_data.append((i1, i2, gt))
 
-    logging.info('Generated %d training and %d test tuples', len(train_data), len(test_data))
-    return (train_data, test_data, loader)
+    logging.info('Generated %d training, %d test and %d val tuples', len(train_data), len(test_data), len(val_data))
+    return (train_data, test_data, val_data, loader)
 
 def load_shapenet_dataset():
     def loader(key):
@@ -104,8 +122,8 @@ def load_shapenet_dataset():
                         dm = (obj, elevation, angle + delta/2, True)
                         test_data.append((i1, i2, gt, dm))
 
-    logging.info('Generated %d training and %d test tuples', len(train_data), len(test_data))
-    return (train_data, test_data, loader)
+    logging.info('Generated %d training, %d test and %d val tuples', len(train_data), len(test_data), len(val_data))
+    return (train_data, test_data, val_data, loader)
 
 def load_dataset(dataset):
     if dataset == 'caltech3d':

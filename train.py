@@ -2,7 +2,8 @@ import os
 import json
 import tensorflow as tf
 
-from dvm_model import DVMSystem
+#from dvm_model import DVMSystem
+from dvm_baseline_model import DVMBaselineSystem as DVMSystem
 from dataset import load_dataset
 
 import logging
@@ -44,8 +45,12 @@ def main(_):
         os.makedirs(FLAGS.log_dir)
     file_handler = logging.FileHandler(os.path.join(FLAGS.log_dir, "log.txt"))
     logging.getLogger().addHandler(file_handler)
-
-    train, test, loader = load_dataset(FLAGS.dataset)
+    
+    dataset = load_dataset(FLAGS.dataset)
+    if len(dataset) == 4:
+        train, test, val, loader = dataset
+    else:
+        train, test, loader = dataset
 
     dvm = DVMSystem(FLAGS)
 

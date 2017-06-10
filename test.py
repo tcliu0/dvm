@@ -2,10 +2,14 @@ import os
 import json
 import random
 import tensorflow as tf
+import numpy as np
 import matplotlib.pyplot as plt
+from scipy import misc
 
+#from dvm_baseline_model import DVMBaselineSystem as DVMSystem
 from dvm_model import DVMSystem
 from dataset import load_dataset
+from util import Progbar
 
 import logging
 
@@ -45,7 +49,11 @@ def main(_):
     file_handler = logging.FileHandler(os.path.join(FLAGS.log_dir, "log.txt"))
     logging.getLogger().addHandler(file_handler)
 
-    train, test, loader = load_dataset(FLAGS.dataset)
+    dataset = load_dataset(FLAGS.dataset)
+    if len(dataset) == 4:
+        train, test, val, loader = dataset
+    else:
+        train, test, loader = dataset
 
     dvm = DVMSystem(FLAGS)
     
@@ -59,29 +67,82 @@ def main(_):
 
     with tf.Session() as sess:
         initialize_model(sess, dvm, train_dir)
+        
+        total_loss = dvm.evaluate(sess, (test, loader))
+        print total_loss
 
-        for test_data in random.sample(test, 10):
-            if FLAGS.use_depth:
-                (result, ), (depth, ) = dvm.predict(sess, (test_data, loader))
-            else:
-                result = dvm.predict(sess, (test_data, loader))[0]
+        # for test_data in test[12345:12346]:
+        #     if FLAGS.use_depth:
+        #         (result, ), (depth, ) = dvm.predict(sess, (test_data, loader))
+        #     else:
+        #         result = dvm.predict(sess, (test_data, loader))[0]
 
-            plt.subplot(1, 2, 1)
-            plt.imshow(result)
-            plt.title('Predicted')
-            plt.subplot(1, 2, 2)
-            plt.imshow(loader(test_data[2]))
-            plt.title('Ground Truth')
-            plt.show()
+        #     input_feed = {dvm.i1_placeholder: [loader(test_data[0])],
+        #                   dvm.i2_placeholder: [loader(test_data[1])],
+        #                   dvm.gt_placeholder: [loader(test_data[2])],
+        #                   dvm.dm_placeholder: [loader(test_data[3])]}
 
-            if FLAGS.use_depth:
-                plt.subplot(1, 2, 1)
-                plt.imshow(depth)
-                plt.title('Predicted')
-                plt.subplot(1, 2, 2)
-                plt.imshow(loader(test_data[3]))
-                plt.title('Ground Truth')
-                plt.show()
+        #     i1 = sess.run(dvm.i1_placeholder, input_feed)[0]
+        #     i2 = sess.run(dvm.i2_placeholder, input_feed)[0]
+        #     gt = sess.run(dvm.gt_placeholder, input_feed)[0]
+        #     gtdm = sess.run(dvm.dm_placeholder, input_feed)[0]
+        #     r1 = sess.run(dvm.tensor_dict['R1'], input_feed)[0]
+        #     r2 = sess.run(dvm.tensor_dict['R2'], input_feed)[0]
+        #     r1p1 = sess.run(dvm.vm.tensor_dict['R1(P1)'], input_feed)[0]
+        #     r2p2 = sess.run(dvm.vm.tensor_dict['R2(P2)'], input_feed)[0]
+        #     c = sess.run(dvm.tensor_dict['C'], input_feed)[0].squeeze().reshape((-1, ))
+        #     m = sess.run(dvm.tensor_dict['M'], input_feed)[0].squeeze()
+        #     r = sess.run(dvm.R, input_feed)[0]
+        #     dm = sess.run(dvm.DM, input_feed)[0]
+        #     plt.imshow(r)
+        #     plt.show()
+
+        #     max_c = []
+        #     rows = []
+        #     while True:
+        #         argmax = np.argmax(c)
+        #         maxval = c[argmax]
+        #         c[argmax] = 0
+
+        #         cont = False
+        #         y = argmax / 256
+        #         for i in range(y-5, y+5):
+        #             if i in rows:
+        #                 cont = True
+        #         if cont:
+        #             continue
+                
+        #         rows.append(argmax/256)
+        #         max_c.append((argmax, maxval))
+        #         if len(max_c) == 10:
+        #             break
+
+        #     r1r2 = np.concatenate((r1, r2), axis=1)
+        #     plt.imshow(r1r2)
+        #     for argmax, c in max_c:
+        #         y = argmax / 256
+        #         x = argmax % 256
+        #         plt.plot([x + c, x - c + 256], [y, y], 'x-')
+
+        #     err = np.linalg.norm(gt - r, axis=2)
+
+        #     misc.imsave('dvm_sn_i1.png', i1)
+        #     misc.imsave('dvm_sn_i2.png', i2)
+        #     misc.imsave('dvm_sn_gt.png', gt)
+        #     misc.imsave('dvm_sn_r1.png', r1)
+        #     misc.imsave('dvm_sn_r2.png', r2)
+        #     misc.imsave('dvm_sn_r1p1.png', r1p1)
+        #     misc.imsave('dvm_sn_r2p2.png', r2p2)
+        #     plt.savefig('dvm_sn_c.png')
+        #     misc.imsave('dvm_sn_m.png', m)
+        #     misc.imsave('dvm_sn_r.png', r)
+        #     misc.imsave('dvm_sn_err.png', err)
+        #     misc.imsave('dm.png', dm)
+        #     misc.imsave('gtdm.png', gtdm)
+        #     misc.imsave('dm_err.png', np.abs(err))
+
+        #     r = sess.run(dvm.R, input_feed)[0]
+        #     misc.imsave('baseline_ct3d_r.png', r)
 
 if __name__ == '__main__':
     tf.app.run()    

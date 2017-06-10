@@ -1,17 +1,11 @@
 ballsander
-battery
-cupsticks
 desk
 eggs
-ethernethub
 filter
 floppybox
 frog
-grandfatherclock
 hat
-keyboard
 motorcycle
-rock
 slinkymonster
 storagebin
 teapot
